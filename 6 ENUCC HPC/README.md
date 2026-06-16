@@ -1,640 +1,128 @@
-# Run MATLAB Kernel in JupyterLab on ENUCC
+# Example Workflow in JupyterLab on HPC
 
-This guide assumes that Python JupyterLab already works with this Conda environment:
+This guide shows a simple example of working in JupyterLab on HPC.
+
+It includes:
+
+```text
+1. Upload data from your local PC to HPC
+2. Open JupyterLab
+3. Create a notebook
+4. Load CSV data
+5. Load public example data
+6. Do simple visual analysis
+```
+
+This guide assumes your Conda environment already exists:
 
 ```text
 /users/40020957/conda/envs/python310
 ```
 
-Now we want to add MATLAB support so that JupyterLab can run both:
+and JupyterLab already works through SLURM.
+
+---
+
+## 1. Prepare a Project Folder on HPC
+
+Login to ENUCC:
+
+```bash
+ssh ENUCC
+```
+
+Create a project folder:
+
+```bash
+mkdir -p /users/40020957/TTHER/jupyter_example
+mkdir -p /users/40020957/TTHER/jupyter_example/data
+```
+
+Go to the project folder:
+
+```bash
+cd /users/40020957/TTHER/jupyter_example
+```
+
+---
+
+## 2. Upload CSV Data from Your PC to HPC
+
+Assume you have a CSV file on your Mac or PC:
 
 ```text
-Python notebooks
-MATLAB notebooks
+my_data.csv
 ```
 
----
+On your local machine, open Terminal and run:
 
-## 1. What Extra Setup Is Needed?
+```bash
+scp my_data.csv ENUCC:/users/40020957/TTHER/jupyter_example/data/
+```
 
-If Python JupyterLab already works, you only need extra setup for MATLAB:
+If your file is in Downloads:
+
+```bash
+scp ~/Downloads/my_data.csv ENUCC:/users/40020957/TTHER/jupyter_example/data/
+```
+
+If you do not use the `ENUCC` shortcut, use:
+
+```bash
+scp -o ProxyJump=40020957@gateway.napier.ac.uk \
+    ~/Downloads/my_data.csv \
+    40020957@login.enucc.napier.ac.uk:/users/40020957/TTHER/jupyter_example/data/
+```
+
+After upload, check the file on HPC:
+
+```bash
+ls -lh /users/40020957/TTHER/jupyter_example/data/
+```
+
+You should see:
 
 ```text
-1. Load MATLAB module
-2. Install MATLAB Engine API for Python
-3. Install matlab_kernel
-4. Register/check MATLAB kernel in Jupyter
-5. Run JupyterLab using a SLURM script that loads MATLAB
-```
-
-This setup should be done on the **login node**.
-
-Do not run heavy notebooks on the login node. Use SLURM to start JupyterLab on a compute or GPU node.
-
----
-
-## 2. Login to ENUCC
-
-From your local machine:
-
-```bash
-ssh -J 40020957@gateway.napier.ac.uk 40020957@login.enucc.napier.ac.uk
-```
-
-Check that you are on the login node:
-
-```bash
-hostname
-pwd
+my_data.csv
 ```
 
 ---
 
-## 3. Load Python and MATLAB Modules
+## 3. Start JupyterLab Using SLURM
 
-On the login node:
+Submit your Jupyter SLURM script.
 
-```bash
-module purge
-module load apps/anaconda3/2024.10/bin
-module load apps/matlab/r2023b
-```
-
-Check MATLAB:
+For CPU JupyterLab:
 
 ```bash
-which matlab
-matlab -batch "disp(version)"
+sbatch run_jupyter_cpu.sh
 ```
 
----
-
-## 4. Activate Python Environment
-
-Enable Conda:
+For GPU JupyterLab:
 
 ```bash
-source "$(conda info --base)/etc/profile.d/conda.sh"
+sbatch run_jupyter_gpu.sh
 ```
 
-Activate your Python environment:
-
-```bash
-conda activate /users/40020957/conda/envs/python310
-```
-
-Check Python and Jupyter:
-
-```bash
-which python
-python --version
-
-which jupyter
-jupyter --version
-```
-
-Expected Python path:
-
-```text
-/users/40020957/conda/envs/python310/bin/python
-```
-
----
-
-## 5. Install Basic Jupyter Packages
-
-If Jupyter already works, you can skip this step.
-
-Otherwise, install Jupyter packages:
-
-```bash
-python -m pip install --upgrade pip
-
-python -m pip install \
-    jupyter \
-    jupyterlab \
-    notebook \
-    ipykernel \
-    ipywidgets
-```
-
----
-
-## 6. Install MATLAB Engine API for Python
-
-First, find the MATLAB root folder:
-
-```bash
-matlab -batch "disp(matlabroot)"
-```
-
-Example output may look like:
-
-```text
-/opt/apps/alces/matlab/R2023b
-```
-
-Go to the MATLAB Engine folder:
-
-```bash
-cd /opt/apps/alces/matlab/R2023b/extern/engines/python
-```
-
-Install the MATLAB Engine into your active Conda environment:
-
-```bash
-python -m pip install .
-```
-
-Test MATLAB Engine:
-
-```bash
-python -c "import matlab.engine; print('MATLAB Engine OK')"
-```
-
-If this prints:
-
-```text
-MATLAB Engine OK
-```
-
-then the MATLAB Engine is installed correctly.
-
----
-
-## 7. Install MATLAB Kernel for Jupyter
-
-Install the MATLAB kernel package:
-
-```bash
-python -m pip install matlab_kernel
-```
-
-Register the MATLAB kernel:
-
-```bash
-python -m matlab_kernel install --user
-```
-
-Check that the MATLAB kernel appears:
-
-```bash
-python -m jupyter kernelspec list
-```
-
-You should see something like:
-
-```text
-matlab      /users/40020957/.local/share/jupyter/kernels/matlab
-python310   /users/40020957/.local/share/jupyter/kernels/python310
-```
-
-Test the MATLAB kernel package:
-
-```bash
-python -c "import matlab_kernel; print('matlab_kernel OK')"
-```
-
----
-
-## 8. Optional: Check MATLAB Kernel
-
-Run:
-
-```bash
-python -m matlab_kernel.check
-```
-
-This command checks whether the MATLAB kernel can find MATLAB correctly.
-
-If the check passes, MATLAB should be available inside JupyterLab.
-
----
-
-# Option 1: MATLAB JupyterLab on CPU Node
-
-Use this if you do not need GPU.
-
----
-
-## 9A. Create CPU SLURM Script
-
-Create the file:
-
-```bash
-nano run_jupyter_matlab_cpu.sh
-```
-
-Paste this script:
-
-```bash
-#!/bin/bash
-#SBATCH --job-name=jupyter_matlab_cpu
-#SBATCH --partition=nodes
-#SBATCH --cpus-per-task=4
-#SBATCH --mem=32G
-#SBATCH --time=04:00:00
-#SBATCH --output=/users/40020957/slurmlogs/jupyter_matlab_cpu_%j.out
-#SBATCH --error=/users/40020957/slurmlogs/jupyter_matlab_cpu_%j.err
-
-set -e
-
-echo "============================================================"
-echo "SLURM JOB INFO"
-echo "============================================================"
-echo "Job ID: $SLURM_JOB_ID"
-echo "Job name: $SLURM_JOB_NAME"
-echo "Node: $(hostname)"
-echo "Node full name: $(hostname -f)"
-echo "Start time: $(date)"
-echo "Submit directory: $SLURM_SUBMIT_DIR"
-echo "Working directory before cd: $(pwd)"
-
-echo ""
-echo "============================================================"
-echo "MOVE TO HOME DIRECTORY"
-echo "============================================================"
-
-cd /users/40020957 || exit 1
-mkdir -p /users/40020957/slurmlogs
-
-echo "Working directory after cd: $(pwd)"
-
-echo ""
-echo "============================================================"
-echo "LOAD MODULES"
-echo "============================================================"
-
-module purge
-module load apps/anaconda3/2024.10/bin
-module load apps/matlab/r2023b
-
-module list
-
-echo ""
-echo "============================================================"
-echo "ACTIVATE CONDA ENVIRONMENT"
-echo "============================================================"
-
-source "$(conda info --base)/etc/profile.d/conda.sh"
-
-export CONDA_PKGS_DIRS=/users/40020957/conda/pkgs
-export PIP_CACHE_DIR=/users/40020957/conda/pip_cache
-export HF_HOME=/users/40020957/conda/hf_cache
-
-conda activate /users/40020957/conda/envs/python310
-
-export PATH="$CONDA_PREFIX/bin:$PATH"
-export LD_LIBRARY_PATH="$CONDA_PREFIX/lib:${LD_LIBRARY_PATH:-}"
-unset PYTHONPATH
-hash -r
-
-echo "Conda environment: $CONDA_PREFIX"
-echo "Python path: $(which python)"
-echo "Jupyter path: $(which jupyter)"
-echo "MATLAB path: $(which matlab)"
-python --version
-
-echo ""
-echo "============================================================"
-echo "PYTHON / LIBRARY CHECK"
-echo "============================================================"
-
-python -c "import sys; print('Python executable:', sys.executable)"
-python -c "import pyexpat; print('pyexpat OK inside SLURM job')"
-
-echo ""
-echo "============================================================"
-echo "MATLAB CHECK"
-echo "============================================================"
-
-matlab -batch "disp(version)" || true
-
-echo ""
-echo "============================================================"
-echo "MATLAB ENGINE CHECK"
-echo "============================================================"
-
-python -c "import matlab.engine; print('MATLAB Engine OK')" || echo "MATLAB Engine not found or failed"
-
-echo ""
-echo "============================================================"
-echo "MATLAB KERNEL CHECK"
-echo "============================================================"
-
-python -c "import matlab_kernel; print('matlab_kernel OK')" || echo "matlab_kernel not found or failed"
-
-echo ""
-echo "Available Jupyter kernels:"
-python -m jupyter kernelspec list || true
-
-echo ""
-echo "============================================================"
-echo "START JUPYTERLAB WITH MATLAB KERNEL"
-echo "============================================================"
-
-PORT=8765
-NODE_FULLNAME=$(hostname -f)
-
-echo "JupyterLab is running on CPU node:"
-echo "$NODE_FULLNAME"
-echo ""
-echo "Port:"
-echo "$PORT"
-echo ""
-echo "Use SSH tunnel from your Mac:"
-echo "ssh -N -L ${PORT}:${NODE_FULLNAME}:${PORT} ENUCC"
-echo ""
-echo "Then open:"
-echo "http://localhost:${PORT}"
-echo ""
-echo "Copy the token from the JupyterLab URL below."
-echo ""
-
-export LD_PRELOAD="$CONDA_PREFIX/lib/libexpat.so.1"
-
-python -m jupyter lab --no-browser --ip=0.0.0.0 --port="$PORT" --port-retries=0
-
-echo ""
-echo "============================================================"
-echo "END TIME"
-echo "============================================================"
-date
-```
-
-Save and exit:
-
-```text
-Ctrl + O
-Enter
-Ctrl + X
-```
-
-Make it executable:
-
-```bash
-chmod +x run_jupyter_matlab_cpu.sh
-```
-
-Submit:
-
-```bash
-sbatch run_jupyter_matlab_cpu.sh
-```
-
----
-
-# Option 2: MATLAB JupyterLab on GPU Node
-
-Use this if you need GPU or CUDA.
-
----
-
-## 9B. Create GPU SLURM Script
-
-Create the file:
-
-```bash
-nano run_jupyter_matlab_gpu.sh
-```
-
-Paste this script:
-
-```bash
-#!/bin/bash
-#SBATCH --job-name=jupyter_matlab_gpu
-#SBATCH --partition=gpu
-#SBATCH --gpus=1
-#SBATCH --cpus-per-task=4
-#SBATCH --mem=32G
-#SBATCH --time=04:00:00
-#SBATCH --output=/users/40020957/slurmlogs/jupyter_matlab_gpu_%j.out
-#SBATCH --error=/users/40020957/slurmlogs/jupyter_matlab_gpu_%j.err
-
-set -e
-
-echo "============================================================"
-echo "SLURM JOB INFO"
-echo "============================================================"
-echo "Job ID: $SLURM_JOB_ID"
-echo "Job name: $SLURM_JOB_NAME"
-echo "Node: $(hostname)"
-echo "Node full name: $(hostname -f)"
-echo "Start time: $(date)"
-echo "Submit directory: $SLURM_SUBMIT_DIR"
-echo "Working directory before cd: $(pwd)"
-
-echo ""
-echo "============================================================"
-echo "MOVE TO HOME DIRECTORY"
-echo "============================================================"
-
-cd /users/40020957 || exit 1
-mkdir -p /users/40020957/slurmlogs
-
-echo "Working directory after cd: $(pwd)"
-
-echo ""
-echo "============================================================"
-echo "LOAD MODULES"
-echo "============================================================"
-
-module purge
-module load apps/anaconda3/2024.10/bin
-module load libs/nvidia-cuda/12.2.2/bin
-module load apps/matlab/r2023b
-
-module list
-
-echo ""
-echo "============================================================"
-echo "ACTIVATE CONDA ENVIRONMENT"
-echo "============================================================"
-
-source "$(conda info --base)/etc/profile.d/conda.sh"
-
-export CONDA_PKGS_DIRS=/users/40020957/conda/pkgs
-export PIP_CACHE_DIR=/users/40020957/conda/pip_cache
-export HF_HOME=/users/40020957/conda/hf_cache
-
-conda activate /users/40020957/conda/envs/python310
-
-export PATH="$CONDA_PREFIX/bin:$PATH"
-export LD_LIBRARY_PATH="$CONDA_PREFIX/lib:${LD_LIBRARY_PATH:-}"
-unset PYTHONPATH
-hash -r
-
-echo "Conda environment: $CONDA_PREFIX"
-echo "Python path: $(which python)"
-echo "Jupyter path: $(which jupyter)"
-echo "MATLAB path: $(which matlab)"
-python --version
-
-echo ""
-echo "============================================================"
-echo "PYTHON / LIBRARY CHECK"
-echo "============================================================"
-
-python -c "import sys; print('Python executable:', sys.executable)"
-python -c "import pyexpat; print('pyexpat OK inside SLURM job')"
-
-echo ""
-echo "libexpat used by Python pyexpat:"
-ldd "$CONDA_PREFIX"/lib/python3.10/lib-dynload/pyexpat*.so | grep expat || true
-
-echo ""
-echo "============================================================"
-echo "MATLAB CHECK"
-echo "============================================================"
-
-matlab -batch "disp(version)" || true
-
-echo ""
-echo "============================================================"
-echo "MATLAB ENGINE CHECK"
-echo "============================================================"
-
-python -c "import matlab.engine; print('MATLAB Engine OK')" || echo "MATLAB Engine not found or failed"
-
-echo ""
-echo "============================================================"
-echo "MATLAB KERNEL CHECK"
-echo "============================================================"
-
-python -c "import matlab_kernel; print('matlab_kernel OK')" || echo "matlab_kernel not found or failed"
-
-echo ""
-echo "Available Jupyter kernels:"
-python -m jupyter kernelspec list || true
-
-echo ""
-echo "============================================================"
-echo "GPU CHECK"
-echo "============================================================"
-
-nvidia-smi || true
-
-echo ""
-echo "============================================================"
-echo "START JUPYTERLAB WITH MATLAB KERNEL"
-echo "============================================================"
-
-PORT=8765
-NODE_FULLNAME=$(hostname -f)
-
-echo "JupyterLab is running on GPU node:"
-echo "$NODE_FULLNAME"
-echo ""
-echo "Port:"
-echo "$PORT"
-echo ""
-echo "Use SSH tunnel from your Mac:"
-echo "ssh -N -L ${PORT}:${NODE_FULLNAME}:${PORT} ENUCC"
-echo ""
-echo "Then open:"
-echo "http://localhost:${PORT}"
-echo ""
-echo "Copy the token from the JupyterLab URL below."
-echo ""
-
-export LD_PRELOAD="$CONDA_PREFIX/lib/libexpat.so.1"
-
-python -m jupyter lab --no-browser --ip=0.0.0.0 --port="$PORT" --port-retries=0
-
-echo ""
-echo "============================================================"
-echo "END TIME"
-echo "============================================================"
-date
-```
-
-Save and exit:
-
-```text
-Ctrl + O
-Enter
-Ctrl + X
-```
-
-Make it executable:
-
-```bash
-chmod +x run_jupyter_matlab_gpu.sh
-```
-
-Submit:
-
-```bash
-sbatch run_jupyter_matlab_gpu.sh
-```
-
----
-
-## 10. Check Job Status
-
-Check your running jobs:
+Check job status:
 
 ```bash
 squeue -u 40020957
 ```
 
-Example:
-
-```text
-JOBID     PARTITION     NAME                 USER       ST     TIME     NODELIST
-138700    gpu           jupyter_matlab_gpu   40020957   R      0:01     gpu01
-```
-
-Wait until the job state is:
-
-```text
-R
-```
-
----
-
-## 11. Read the Output File
-
-List log files:
+When the job is running, read the output file:
 
 ```bash
 ls -lt /users/40020957/slurmlogs/
 ```
 
-For CPU:
-
-```bash
-cat /users/40020957/slurmlogs/jupyter_matlab_cpu_JOBID.out
-```
-
-For GPU:
-
-```bash
-cat /users/40020957/slurmlogs/jupyter_matlab_gpu_JOBID.out
-```
-
 Example:
 
 ```bash
-cat /users/40020957/slurmlogs/jupyter_matlab_gpu_138700.out
+cat /users/40020957/slurmlogs/jupyter_gpu_JOBID.out
 ```
 
-Or follow live:
-
-```bash
-tail -f /users/40020957/slurmlogs/jupyter_matlab_gpu_JOBID.out
-```
-
----
-
-## 12. Copy SSH Tunnel Command
-
-Inside the `.out` file, look for:
-
-```text
-Use SSH tunnel from your Mac:
-ssh -N -L 8765:NODE_FULLNAME:8765 ENUCC
-```
+Copy the SSH tunnel command from the `.out` file.
 
 Example:
 
@@ -642,33 +130,19 @@ Example:
 ssh -N -L 8765:gpu01.enucc.enu.alces.network:8765 ENUCC
 ```
 
-Run this command on your **Mac terminal**.
+Run that command on your local Mac terminal.
 
-Keep the Mac terminal open.
-
----
-
-## 13. Open JupyterLab
-
-Open this in your local browser:
+Then open:
 
 ```text
 http://localhost:8765
 ```
 
-Copy the token from the `.out` file.
-
-Look for a line similar to:
-
-```text
-http://127.0.0.1:8765/lab?token=xxxxxxxxxxxxxxxx
-```
-
-Paste the token into the browser.
+Copy the token from the `.out` file and paste it into the browser.
 
 ---
 
-## 14. Select MATLAB Kernel
+## 4. Create a New Notebook
 
 Inside JupyterLab:
 
@@ -676,294 +150,553 @@ Inside JupyterLab:
 File -> New -> Notebook
 ```
 
-Then select:
+Choose the Python kernel:
 
 ```text
-MATLAB
+Python 3.10 (python310)
 ```
 
-or:
+You can rename the notebook:
 
 ```text
-matlab
-```
-
-You can also check the launcher page and choose the MATLAB notebook option.
-
----
-
-## 15. Test MATLAB in Jupyter
-
-Create a new MATLAB notebook and run:
-
-```matlab
-disp("MATLAB kernel is working")
-version
-```
-
-Test a simple plot:
-
-```matlab
-x = 0:0.1:10;
-y = sin(x);
-
-plot(x, y)
-title("Simple MATLAB Plot")
-xlabel("x")
-ylabel("sin(x)")
-grid on
-```
-
-Test matrix calculation:
-
-```matlab
-A = [1 2; 3 4];
-B = inv(A);
-disp(B)
+example_visual_analysis.ipynb
 ```
 
 ---
 
-## 16. Test MATLAB GPU
+# Part A: Load CSV Data Uploaded from Your PC
 
-Only use this in the GPU job.
+## 5. Import Python Libraries
 
-In a MATLAB notebook:
+In the first notebook cell:
 
-```matlab
-gpuDevice
+```python
+import os
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
 ```
-
-Test GPU array:
-
-```matlab
-A = gpuArray(rand(1000));
-B = A * A;
-gather(B(1:5, 1:5))
-```
-
-If GPU is available, MATLAB should show GPU device information.
 
 ---
 
-## 17. Stop JupyterLab
+## 6. Load Your Uploaded CSV File
 
-Check jobs:
+Set the file path:
 
-```bash
-squeue -u 40020957
+```python
+CSV_PATH = "/users/40020957/TTHER/jupyter_example/data/my_data.csv"
+
+df = pd.read_csv(CSV_PATH)
+
+print("Shape:", df.shape)
+df.head()
 ```
 
-Cancel the job:
+Check column names:
 
-```bash
-scancel JOBID
+```python
+df.columns
 ```
+
+Check basic information:
+
+```python
+df.info()
+```
+
+Check missing values:
+
+```python
+df.isna().sum()
+```
+
+---
+
+## 7. Basic Dataset Summary
+
+Show simple statistics:
+
+```python
+df.describe()
+```
+
+Show number of rows and columns:
+
+```python
+print("Number of rows:", df.shape[0])
+print("Number of columns:", df.shape[1])
+```
+
+Show data types:
+
+```python
+df.dtypes
+```
+
+---
+
+## 8. Example Visual Analysis
+
+Choose one numeric column from your dataset.
 
 Example:
 
-```bash
-scancel 138700
+```python
+numeric_cols = df.select_dtypes(include=["number"]).columns
+
+print("Numeric columns:")
+print(numeric_cols)
 ```
 
-Check again:
+Plot histogram for the first numeric column:
+
+```python
+col = numeric_cols[0]
+
+plt.figure(figsize=(8, 5))
+plt.hist(df[col].dropna(), bins=30)
+plt.title(f"Distribution of {col}")
+plt.xlabel(col)
+plt.ylabel("Frequency")
+plt.grid(True)
+plt.show()
+```
+
+Plot boxplot:
+
+```python
+plt.figure(figsize=(6, 5))
+plt.boxplot(df[col].dropna())
+plt.title(f"Boxplot of {col}")
+plt.ylabel(col)
+plt.grid(True)
+plt.show()
+```
+
+Plot line graph:
+
+```python
+plt.figure(figsize=(10, 5))
+plt.plot(df[col].dropna().values)
+plt.title(f"Line Plot of {col}")
+plt.xlabel("Index")
+plt.ylabel(col)
+plt.grid(True)
+plt.show()
+```
+
+---
+
+## 9. Correlation Heatmap Without Seaborn
+
+Select only numeric columns:
+
+```python
+numeric_df = df.select_dtypes(include=["number"])
+
+corr = numeric_df.corr()
+
+corr
+```
+
+Plot correlation matrix:
+
+```python
+plt.figure(figsize=(8, 6))
+plt.imshow(corr, aspect="auto")
+plt.colorbar(label="Correlation")
+plt.xticks(range(len(corr.columns)), corr.columns, rotation=90)
+plt.yticks(range(len(corr.columns)), corr.columns)
+plt.title("Correlation Matrix")
+plt.tight_layout()
+plt.show()
+```
+
+---
+
+# Part B: Load Public Example Data
+
+This part uses the public Iris dataset from `scikit-learn`.
+
+It does not need your own CSV file.
+
+---
+
+## 10. Load Public Iris Dataset
+
+In a new notebook cell:
+
+```python
+from sklearn.datasets import load_iris
+
+iris = load_iris(as_frame=True)
+
+df_iris = iris.frame
+
+df_iris.head()
+```
+
+Check the shape:
+
+```python
+print("Shape:", df_iris.shape)
+```
+
+Check columns:
+
+```python
+df_iris.columns
+```
+
+The target class is stored in:
+
+```python
+target
+```
+
+Add readable class names:
+
+```python
+df_iris["species"] = df_iris["target"].map(
+    dict(enumerate(iris.target_names))
+)
+
+df_iris.head()
+```
+
+---
+
+## 11. Summary of Public Dataset
+
+Check number of samples per class:
+
+```python
+df_iris["species"].value_counts()
+```
+
+Summary statistics:
+
+```python
+df_iris.describe()
+```
+
+---
+
+## 12. Visual Analysis of Public Dataset
+
+Plot class count:
+
+```python
+class_counts = df_iris["species"].value_counts()
+
+plt.figure(figsize=(7, 5))
+plt.bar(class_counts.index, class_counts.values)
+plt.title("Number of Samples per Iris Species")
+plt.xlabel("Species")
+plt.ylabel("Count")
+plt.grid(axis="y")
+plt.show()
+```
+
+Plot sepal length distribution:
+
+```python
+plt.figure(figsize=(8, 5))
+plt.hist(df_iris["sepal length (cm)"], bins=20)
+plt.title("Distribution of Sepal Length")
+plt.xlabel("Sepal Length (cm)")
+plt.ylabel("Frequency")
+plt.grid(True)
+plt.show()
+```
+
+Plot scatter graph:
+
+```python
+plt.figure(figsize=(8, 6))
+
+for species in df_iris["species"].unique():
+    subset = df_iris[df_iris["species"] == species]
+    plt.scatter(
+        subset["sepal length (cm)"],
+        subset["sepal width (cm)"],
+        label=species
+    )
+
+plt.title("Sepal Length vs Sepal Width")
+plt.xlabel("Sepal Length (cm)")
+plt.ylabel("Sepal Width (cm)")
+plt.legend()
+plt.grid(True)
+plt.show()
+```
+
+Plot petal length vs petal width:
+
+```python
+plt.figure(figsize=(8, 6))
+
+for species in df_iris["species"].unique():
+    subset = df_iris[df_iris["species"] == species]
+    plt.scatter(
+        subset["petal length (cm)"],
+        subset["petal width (cm)"],
+        label=species
+    )
+
+plt.title("Petal Length vs Petal Width")
+plt.xlabel("Petal Length (cm)")
+plt.ylabel("Petal Width (cm)")
+plt.legend()
+plt.grid(True)
+plt.show()
+```
+
+---
+
+# Part C: Save Results from JupyterLab
+
+## 13. Save a Processed CSV File
+
+Create output folder:
+
+```python
+OUTPUT_DIR = "/users/40020957/TTHER/jupyter_example/results"
+
+os.makedirs(OUTPUT_DIR, exist_ok=True)
+```
+
+Save processed Iris data:
+
+```python
+output_csv = os.path.join(OUTPUT_DIR, "iris_processed.csv")
+
+df_iris.to_csv(output_csv, index=False)
+
+print("Saved:", output_csv)
+```
+
+---
+
+## 14. Save a Figure
+
+Create and save a figure:
+
+```python
+output_fig = os.path.join(OUTPUT_DIR, "iris_petal_scatter.png")
+
+plt.figure(figsize=(8, 6))
+
+for species in df_iris["species"].unique():
+    subset = df_iris[df_iris["species"] == species]
+    plt.scatter(
+        subset["petal length (cm)"],
+        subset["petal width (cm)"],
+        label=species
+    )
+
+plt.title("Petal Length vs Petal Width")
+plt.xlabel("Petal Length (cm)")
+plt.ylabel("Petal Width (cm)")
+plt.legend()
+plt.grid(True)
+plt.savefig(output_fig, dpi=300, bbox_inches="tight")
+plt.show()
+
+print("Saved:", output_fig)
+```
+
+Check files from terminal:
 
 ```bash
+ls -lh /users/40020957/TTHER/jupyter_example/results/
+```
+
+---
+
+# Part D: Download Results Back to Your PC
+
+On your local machine, download the results:
+
+```bash
+scp -r ENUCC:/users/40020957/TTHER/jupyter_example/results ~/Downloads/
+```
+
+Or download one file:
+
+```bash
+scp ENUCC:/users/40020957/TTHER/jupyter_example/results/iris_processed.csv ~/Downloads/
+```
+
+---
+
+# Full Notebook Example
+
+You can copy this into one Jupyter notebook.
+
+```python
+import os
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+from sklearn.datasets import load_iris
+
+# =========================
+# PROJECT PATHS
+# =========================
+
+PROJECT_DIR = "/users/40020957/TTHER/jupyter_example"
+DATA_DIR = os.path.join(PROJECT_DIR, "data")
+OUTPUT_DIR = os.path.join(PROJECT_DIR, "results")
+
+os.makedirs(DATA_DIR, exist_ok=True)
+os.makedirs(OUTPUT_DIR, exist_ok=True)
+
+# =========================
+# OPTION 1: LOAD YOUR OWN CSV
+# =========================
+
+CSV_PATH = os.path.join(DATA_DIR, "my_data.csv")
+
+if os.path.exists(CSV_PATH):
+    df = pd.read_csv(CSV_PATH)
+
+    print("Loaded local CSV:")
+    print("Shape:", df.shape)
+    display(df.head())
+
+    print("Columns:")
+    print(df.columns)
+
+    print("Missing values:")
+    display(df.isna().sum())
+
+    numeric_cols = df.select_dtypes(include=["number"]).columns
+
+    if len(numeric_cols) > 0:
+        col = numeric_cols[0]
+
+        plt.figure(figsize=(8, 5))
+        plt.hist(df[col].dropna(), bins=30)
+        plt.title(f"Distribution of {col}")
+        plt.xlabel(col)
+        plt.ylabel("Frequency")
+        plt.grid(True)
+        plt.show()
+    else:
+        print("No numeric columns found in your CSV.")
+else:
+    print("No local CSV found at:")
+    print(CSV_PATH)
+    print("Skipping local CSV example.")
+
+# =========================
+# OPTION 2: LOAD PUBLIC DATASET
+# =========================
+
+iris = load_iris(as_frame=True)
+df_iris = iris.frame
+
+df_iris["species"] = df_iris["target"].map(
+    dict(enumerate(iris.target_names))
+)
+
+print("Loaded public Iris dataset:")
+print("Shape:", df_iris.shape)
+display(df_iris.head())
+
+# =========================
+# SIMPLE SUMMARY
+# =========================
+
+print("Class counts:")
+display(df_iris["species"].value_counts())
+
+print("Statistics:")
+display(df_iris.describe())
+
+# =========================
+# VISUAL ANALYSIS
+# =========================
+
+class_counts = df_iris["species"].value_counts()
+
+plt.figure(figsize=(7, 5))
+plt.bar(class_counts.index, class_counts.values)
+plt.title("Number of Samples per Iris Species")
+plt.xlabel("Species")
+plt.ylabel("Count")
+plt.grid(axis="y")
+plt.show()
+
+plt.figure(figsize=(8, 5))
+plt.hist(df_iris["sepal length (cm)"], bins=20)
+plt.title("Distribution of Sepal Length")
+plt.xlabel("Sepal Length (cm)")
+plt.ylabel("Frequency")
+plt.grid(True)
+plt.show()
+
+plt.figure(figsize=(8, 6))
+
+for species in df_iris["species"].unique():
+    subset = df_iris[df_iris["species"] == species]
+    plt.scatter(
+        subset["petal length (cm)"],
+        subset["petal width (cm)"],
+        label=species
+    )
+
+plt.title("Petal Length vs Petal Width")
+plt.xlabel("Petal Length (cm)")
+plt.ylabel("Petal Width (cm)")
+plt.legend()
+plt.grid(True)
+
+output_fig = os.path.join(OUTPUT_DIR, "iris_petal_scatter.png")
+plt.savefig(output_fig, dpi=300, bbox_inches="tight")
+plt.show()
+
+# =========================
+# SAVE OUTPUT CSV
+# =========================
+
+output_csv = os.path.join(OUTPUT_DIR, "iris_processed.csv")
+
+df_iris.to_csv(output_csv, index=False)
+
+print("Saved CSV:", output_csv)
+print("Saved figure:", output_fig)
+```
+
+---
+
+# Summary
+
+Typical JupyterLab workflow on HPC:
+
+```text
+1. Upload data from PC to HPC using scp
+2. Start JupyterLab using sbatch
+3. Open JupyterLab in browser through SSH tunnel
+4. Create a notebook
+5. Load CSV using pandas
+6. Explore data with df.head(), df.info(), df.describe()
+7. Plot graphs with matplotlib
+8. Save results to HPC folder
+9. Download results back to PC using scp
+```
+
+Useful commands:
+
+```bash
+scp ~/Downloads/my_data.csv ENUCC:/users/40020957/TTHER/jupyter_example/data/
+
+sbatch run_jupyter_gpu.sh
+
 squeue -u 40020957
+
+cat /users/40020957/slurmlogs/jupyter_gpu_JOBID.out
+
+scp -r ENUCC:/users/40020957/TTHER/jupyter_example/results ~/Downloads/
 ```
-
-If no job appears, JupyterLab has stopped.
-
----
-
-## 18. Check Error File
-
-For CPU:
-
-```bash
-cat /users/40020957/slurmlogs/jupyter_matlab_cpu_JOBID.err
-```
-
-For GPU:
-
-```bash
-cat /users/40020957/slurmlogs/jupyter_matlab_gpu_JOBID.err
-```
-
-Common problems:
-
-```text
-matlab_kernel not found
-MATLAB Engine not found
-MATLAB module not loaded
-Jupyter started from wrong Python environment
-Port 8765 already used
-MATLAB license unavailable
-```
-
----
-
-## 19. If MATLAB Kernel Does Not Appear
-
-Activate the environment again:
-
-```bash
-module load apps/anaconda3/2024.10/bin
-module load apps/matlab/r2023b
-source "$(conda info --base)/etc/profile.d/conda.sh"
-conda activate /users/40020957/conda/envs/python310
-```
-
-Reinstall and register the kernel:
-
-```bash
-python -m pip install matlab_kernel
-python -m matlab_kernel install --user
-python -m jupyter kernelspec list
-```
-
-Check:
-
-```bash
-python -c "import matlab_kernel; print('matlab_kernel OK')"
-python -m matlab_kernel.check
-```
-
----
-
-## 20. If MATLAB Engine Does Not Work
-
-Check MATLAB root:
-
-```bash
-matlab -batch "disp(matlabroot)"
-```
-
-Go to the MATLAB Engine folder:
-
-```bash
-cd /opt/apps/alces/matlab/R2023b/extern/engines/python
-```
-
-Reinstall:
-
-```bash
-python -m pip install .
-```
-
-Check again:
-
-```bash
-python -c "import matlab.engine; print('MATLAB Engine OK')"
-```
-
----
-
-## 21. If Port 8765 Is Already Used
-
-Edit the script and change:
-
-```bash
-PORT=8765
-```
-
-to another port:
-
-```bash
-PORT=8766
-```
-
-Then submit again:
-
-```bash
-sbatch run_jupyter_matlab_gpu.sh
-```
-
-The browser address becomes:
-
-```text
-http://localhost:8766
-```
-
----
-
-## Main Commands Summary
-
-Setup MATLAB kernel:
-
-```bash
-module purge
-module load apps/anaconda3/2024.10/bin
-module load apps/matlab/r2023b
-
-source "$(conda info --base)/etc/profile.d/conda.sh"
-conda activate /users/40020957/conda/envs/python310
-
-cd /opt/apps/alces/matlab/R2023b/extern/engines/python
-python -m pip install .
-
-python -m pip install matlab_kernel
-python -m matlab_kernel install --user
-
-python -c "import matlab.engine; print('MATLAB Engine OK')"
-python -c "import matlab_kernel; print('matlab_kernel OK')"
-python -m jupyter kernelspec list
-```
-
-Run MATLAB Jupyter on CPU:
-
-```bash
-sbatch run_jupyter_matlab_cpu.sh
-```
-
-Run MATLAB Jupyter on GPU:
-
-```bash
-sbatch run_jupyter_matlab_gpu.sh
-```
-
-Check job:
-
-```bash
-squeue -u 40020957
-```
-
-Read output:
-
-```bash
-cat /users/40020957/slurmlogs/jupyter_matlab_gpu_JOBID.out
-```
-
-Run SSH tunnel on Mac:
-
-```bash
-ssh -N -L 8765:NODE_FULLNAME:8765 ENUCC
-```
-
-Open browser:
-
-```text
-http://localhost:8765
-```
-
-Stop job:
-
-```bash
-scancel JOBID
-```
-
----
-
-## Summary
-
-If Python JupyterLab already works, MATLAB needs this extra setup:
-
-```text
-1. MATLAB module
-2. MATLAB Engine API for Python
-3. matlab_kernel
-4. MATLAB kernelspec
-5. SLURM script that loads MATLAB before starting JupyterLab
-```
-
-After setup, JupyterLab should show both Python and MATLAB kernels.
