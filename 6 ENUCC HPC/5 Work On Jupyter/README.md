@@ -16,7 +16,7 @@ It includes:
 This guide assumes your Conda environment already exists:
 
 ```text
-/users/40020957/conda/envs/python310
+/users/40000000/conda/envs/python310
 ```
 
 and JupyterLab already works through SLURM.
@@ -34,14 +34,14 @@ ssh ENUCC
 Create a project folder:
 
 ```bash
-mkdir -p /users/40020957/TTHER/jupyter_example
-mkdir -p /users/40020957/TTHER/jupyter_example/data
+mkdir -p /users/40000000/TTHER/jupyter_example
+mkdir -p /users/40000000/TTHER/jupyter_example/data
 ```
 
 Go to the project folder:
 
 ```bash
-cd /users/40020957/TTHER/jupyter_example
+cd /users/40000000/TTHER/jupyter_example
 ```
 
 ---
@@ -57,27 +57,27 @@ my_data.csv
 On your local machine, open Terminal and run:
 
 ```bash
-scp my_data.csv ENUCC:/users/40020957/TTHER/jupyter_example/data/
+scp my_data.csv ENUCC:/users/40000000/TTHER/jupyter_example/data/
 ```
 
 If your file is in Downloads:
 
 ```bash
-scp ~/Downloads/my_data.csv ENUCC:/users/40020957/TTHER/jupyter_example/data/
+scp ~/Downloads/my_data.csv ENUCC:/users/40000000/TTHER/jupyter_example/data/
 ```
 
 If you do not use the `ENUCC` shortcut, use:
 
 ```bash
-scp -o ProxyJump=40020957@gateway.napier.ac.uk \
+scp -o ProxyJump=40000000@gateway.napier.ac.uk \
     ~/Downloads/my_data.csv \
-    40020957@login.enucc.napier.ac.uk:/users/40020957/TTHER/jupyter_example/data/
+    40000000@login.enucc.napier.ac.uk:/users/40000000/TTHER/jupyter_example/data/
 ```
 
 After upload, check the file on HPC:
 
 ```bash
-ls -lh /users/40020957/TTHER/jupyter_example/data/
+ls -lh /users/40000000/TTHER/jupyter_example/data/
 ```
 
 You should see:
@@ -107,19 +107,19 @@ sbatch run_jupyter_gpu.sh
 Check job status:
 
 ```bash
-squeue -u 40020957
+squeue -u 40000000
 ```
 
 When the job is running, read the output file:
 
 ```bash
-ls -lt /users/40020957/slurmlogs/
+ls -lt /users/40000000/slurmlogs/
 ```
 
 Example:
 
 ```bash
-cat /users/40020957/slurmlogs/jupyter_gpu_JOBID.out
+cat /users/40000000/slurmlogs/jupyter_gpu_JOBID.out
 ```
 
 Copy the SSH tunnel command from the `.out` file.
@@ -184,7 +184,7 @@ import matplotlib.pyplot as plt
 Set the file path:
 
 ```python
-CSV_PATH = "/users/40020957/TTHER/jupyter_example/data/my_data.csv"
+CSV_PATH = "/users/40000000/TTHER/jupyter_example/data/my_data.csv"
 
 df = pd.read_csv(CSV_PATH)
 
@@ -461,7 +461,7 @@ plt.show()
 Create output folder:
 
 ```python
-OUTPUT_DIR = "/users/40020957/TTHER/jupyter_example/results"
+OUTPUT_DIR = "/users/40000000/TTHER/jupyter_example/results"
 
 os.makedirs(OUTPUT_DIR, exist_ok=True)
 ```
@@ -509,7 +509,7 @@ print("Saved:", output_fig)
 Check files from terminal:
 
 ```bash
-ls -lh /users/40020957/TTHER/jupyter_example/results/
+ls -lh /users/40000000/TTHER/jupyter_example/results/
 ```
 
 ---
@@ -519,13 +519,13 @@ ls -lh /users/40020957/TTHER/jupyter_example/results/
 On your local machine, download the results:
 
 ```bash
-scp -r ENUCC:/users/40020957/TTHER/jupyter_example/results ~/Downloads/
+scp -r ENUCC:/users/40000000/TTHER/jupyter_example/results ~/Downloads/
 ```
 
 Or download one file:
 
 ```bash
-scp ENUCC:/users/40020957/TTHER/jupyter_example/results/iris_processed.csv ~/Downloads/
+scp ENUCC:/users/40000000/TTHER/jupyter_example/results/iris_processed.csv ~/Downloads/
 ```
 
 ---
@@ -545,7 +545,7 @@ from sklearn.datasets import load_iris
 # PROJECT PATHS
 # =========================
 
-PROJECT_DIR = "/users/40020957/TTHER/jupyter_example"
+PROJECT_DIR = "/users/40000000/TTHER/jupyter_example"
 DATA_DIR = os.path.join(PROJECT_DIR, "data")
 OUTPUT_DIR = os.path.join(PROJECT_DIR, "results")
 
@@ -690,13 +690,13 @@ Typical JupyterLab workflow on HPC:
 Useful commands:
 
 ```bash
-scp ~/Downloads/my_data.csv ENUCC:/users/40020957/TTHER/jupyter_example/data/
+scp ~/Downloads/my_data.csv ENUCC:/users/40000000/TTHER/jupyter_example/data/
 
 sbatch run_jupyter_gpu.sh
 
-squeue -u 40020957
+squeue -u 40000000
 
-cat /users/40020957/slurmlogs/jupyter_gpu_JOBID.out
+cat /users/40000000/slurmlogs/jupyter_gpu_JOBID.out
 
-scp -r ENUCC:/users/40020957/TTHER/jupyter_example/results ~/Downloads/
+scp -r ENUCC:/users/40000000/TTHER/jupyter_example/results ~/Downloads/
 ```

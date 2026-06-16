@@ -3,7 +3,7 @@
 This guide assumes you already completed the Python JupyterLab setup and already have this Conda environment:
 
 ```text
-/users/40020957/conda/envs/python310
+/users/40000000/conda/envs/python310
 ```
 
 Now we will add **MATLAB support inside JupyterLab**.
@@ -24,7 +24,7 @@ as available notebook kernels.
 From your local machine:
 
 ```bash
-ssh -J 40020957@gateway.napier.ac.uk 40020957@login.enucc.napier.ac.uk
+ssh -J 40000000@gateway.napier.ac.uk 40000000@login.enucc.napier.ac.uk
 ```
 
 After login, check:
@@ -45,7 +45,7 @@ On the login node:
 ```bash
 module load apps/anaconda3/2024.10/bin
 source "$(conda info --base)/etc/profile.d/conda.sh"
-conda activate /users/40020957/conda/envs/python310
+conda activate /users/40000000/conda/envs/python310
 ```
 
 Check:
@@ -59,7 +59,7 @@ which jupyter
 Expected Python path:
 
 ```text
-/users/40020957/conda/envs/python310/bin/python
+/users/40000000/conda/envs/python310/bin/python
 ```
 
 ---
@@ -106,8 +106,8 @@ You should see something similar to:
 
 ```text
 Available kernels:
-  matlab     /users/40020957/conda/envs/python310/share/jupyter/kernels/matlab
-  python3    /users/40020957/conda/envs/python310/share/jupyter/kernels/python3
+  matlab     /users/40000000/conda/envs/python310/share/jupyter/kernels/matlab
+  python3    /users/40000000/conda/envs/python310/share/jupyter/kernels/python3
 ```
 
 If you see `matlab`, then the MATLAB Jupyter kernel is installed.
@@ -138,8 +138,8 @@ Paste this script:
 #SBATCH --cpus-per-task=4
 #SBATCH --mem=32G
 #SBATCH --time=04:00:00
-#SBATCH --output=/users/40020957/slurmlogs/jupyter_matlab_gpu_%j.out
-#SBATCH --error=/users/40020957/slurmlogs/jupyter_matlab_gpu_%j.err
+#SBATCH --output=/users/40000000/slurmlogs/jupyter_matlab_gpu_%j.out
+#SBATCH --error=/users/40000000/slurmlogs/jupyter_matlab_gpu_%j.err
 
 set -e
 
@@ -159,8 +159,8 @@ echo "============================================================"
 echo "MOVE TO HOME DIRECTORY"
 echo "============================================================"
 
-cd /users/40020957 || exit 1
-mkdir -p /users/40020957/slurmlogs
+cd /users/40000000 || exit 1
+mkdir -p /users/40000000/slurmlogs
 
 echo "Working directory after cd: $(pwd)"
 
@@ -183,11 +183,11 @@ echo "============================================================"
 
 source "$(conda info --base)/etc/profile.d/conda.sh"
 
-export CONDA_PKGS_DIRS=/users/40020957/conda/pkgs
-export PIP_CACHE_DIR=/users/40020957/conda/pip_cache
-export HF_HOME=/users/40020957/conda/hf_cache
+export CONDA_PKGS_DIRS=/users/40000000/conda/pkgs
+export PIP_CACHE_DIR=/users/40000000/conda/pip_cache
+export HF_HOME=/users/40000000/conda/hf_cache
 
-conda activate /users/40020957/conda/envs/python310
+conda activate /users/40000000/conda/envs/python310
 
 # Force the correct Conda environment binaries and libraries
 export PATH="$CONDA_PREFIX/bin:$PATH"
@@ -310,7 +310,7 @@ Submitted batch job 138700
 Check job status:
 
 ```bash
-squeue -u 40020957
+squeue -u 40000000
 ```
 
 ---
@@ -320,25 +320,25 @@ squeue -u 40020957
 Check the latest log file:
 
 ```bash
-ls -lt /users/40020957/slurmlogs/
+ls -lt /users/40000000/slurmlogs/
 ```
 
 Read the output:
 
 ```bash
-cat /users/40020957/slurmlogs/jupyter_matlab_gpu_JOBID.out
+cat /users/40000000/slurmlogs/jupyter_matlab_gpu_JOBID.out
 ```
 
 Example:
 
 ```bash
-cat /users/40020957/slurmlogs/jupyter_matlab_gpu_138700.out
+cat /users/40000000/slurmlogs/jupyter_matlab_gpu_138700.out
 ```
 
 Or follow the output live:
 
 ```bash
-tail -f /users/40020957/slurmlogs/jupyter_matlab_gpu_JOBID.out
+tail -f /users/40000000/slurmlogs/jupyter_matlab_gpu_JOBID.out
 ```
 
 ---
@@ -449,7 +449,7 @@ gather(B(1,1))
 Check your running jobs:
 
 ```bash
-squeue -u 40020957
+squeue -u 40000000
 ```
 
 Cancel the job:
@@ -467,7 +467,7 @@ scancel 138700
 Check again:
 
 ```bash
-squeue -u 40020957
+squeue -u 40000000
 ```
 
 If no job appears, JupyterLab has stopped.
@@ -551,13 +551,13 @@ matlab -batch "disp(version)"
 Check the error log:
 
 ```bash
-cat /users/40020957/slurmlogs/jupyter_matlab_gpu_JOBID.err
+cat /users/40000000/slurmlogs/jupyter_matlab_gpu_JOBID.err
 ```
 
 Also check the output log:
 
 ```bash
-cat /users/40020957/slurmlogs/jupyter_matlab_gpu_JOBID.out
+cat /users/40000000/slurmlogs/jupyter_matlab_gpu_JOBID.out
 ```
 
 Important checks:
@@ -579,7 +579,7 @@ Activate environment:
 ```bash
 module load apps/anaconda3/2024.10/bin
 source "$(conda info --base)/etc/profile.d/conda.sh"
-conda activate /users/40020957/conda/envs/python310
+conda activate /users/40000000/conda/envs/python310
 ```
 
 Load MATLAB:
@@ -604,13 +604,13 @@ sbatch run_jupyter_matlab_gpu.sh
 Check jobs:
 
 ```bash
-squeue -u 40020957
+squeue -u 40000000
 ```
 
 Read output:
 
 ```bash
-cat /users/40020957/slurmlogs/jupyter_matlab_gpu_JOBID.out
+cat /users/40000000/slurmlogs/jupyter_matlab_gpu_JOBID.out
 ```
 
 Run SSH tunnel on Mac:
