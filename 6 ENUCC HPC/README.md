@@ -5,6 +5,8 @@ This guide explains how to log in to the ENUCC HPC system from your local comput
 1. SSH Terminal
 2. VS Code Remote SSH
 
+![ENU Simple architecture](simplearchitecture.png)
+
 ---
 
 ## 1. Login Overview
